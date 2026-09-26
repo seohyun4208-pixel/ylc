@@ -17,6 +17,7 @@ excel_file = st.file_uploader("기존 명단 엑셀 업로드 (경남지부 시�
 
 if zoom_file and excel_file:
     raw_text = zoom_file.read().decode("utf-8")
+    raw_text = raw_text.replace("\r\n", "\n").replace("\r", "\n")  # ★ 줄바꿈 통일 (핵심 수정)
 
     # ---------- 1. 채팅 파싱 ----------
     pattern = re.compile(
@@ -48,6 +49,9 @@ if zoom_file and excel_file:
         st.error("경남지부 시트를 찾을 수 없습니다.")
         st.stop()
     df_members = pd.read_excel(xls, sheet_name="경남지부")
+    df_members.columns = df_members.columns.str.strip()  # ★ 열 이름 공백 제거 (안전장치)
+    df_members["이름"] = df_members["이름"].astype(str).str.strip()  # ★ 이름 공백 제거
+
     member_names = set(df_members["이름"])
     unknown_names = set(df_chat["이름"]) - member_names if not df_chat.empty else set()
 
@@ -76,7 +80,7 @@ if zoom_file and excel_file:
         return status
 
     results = []
-    manual_review = []  # 오류로 인해 수동 확인이 필요한 사람 목록
+    manual_review = []
 
     for name in df_members["이름"]:
         s_status = classify(name, start_notice, df_chat)
